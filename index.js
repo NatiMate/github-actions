@@ -1,7 +1,7 @@
 const core = require('@actions/core');
 const github = require('@actions/github');
 const { Octokit } = require('@octokit/rest');
-const fetch = require('node-fetch');
+const fetch = require('./node_modules/node-fetch');
 
 try {
   const apiKey = process.env['TRELLO_API_KEY'];
@@ -112,13 +112,23 @@ function moveCardWhenIssueClose(apiKey, apiToken) {
 }
 
 async function getLabelsOfBoard(apiKey, apiToken, boardId) {
-  const response = await fetch(`https://api.trello.com/1/boards/${boardId}/labels?key=${apiKey}&token=${apiToken}`);
-  return await response.json();
+  const options = {
+    method: 'GET',
+    json: true,
+  }
+  const response = await fetch(`https://api.trello.com/1/boards/${boardId}/labels?key=${apiKey}&token=${apiToken}`, options);
+  console.dir(response);
+  return response;
 }
 
 async function getCard(apiKey, apiToken, cardId) {
-  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`);
-  return await response.json();
+  const options = {
+    method: 'GET',
+    json: true,
+  }
+  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options);
+  console.dir(response);
+  return response;
 }
 
 async function createCard(apiKey, apiToken, listId, params) {
@@ -134,11 +144,12 @@ async function createCard(apiKey, apiToken, listId, params) {
       'urlSource': params.url,
       'idLabels': params.labelIds
     },
-    json: true
+    json: true,
   }
 
   const response = await fetch('https://api.trello.com/1/cards', options)
-  return await response.json()
+  console.dir(response);
+  return response
 }
 
 async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
@@ -146,10 +157,12 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
     method: 'PUT',
     form: {
       'idList': newListId,
-    }
+    },
+    json: true,
   }
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options)
-  return await response.json()
+  console.dir(response);
+  return response
 }
 
 async function patch(url, params) {
