@@ -165,7 +165,7 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
 
 async function patchIssue(owner, repo, issue_number, body) {
   console.dir(`Calling PATCH for /repos/${owner}/${repo}/issues/${issue_number}`);
-  const octokit = new Octokit()
+  const octokit = new Octokit({auth: process.env['GITHUB_TOKEN']})
   await octokit.request(`PATCH /repos/${owner}/${repo}/issues/${issue_number}`, {
     owner: owner,
     repo: repo,
