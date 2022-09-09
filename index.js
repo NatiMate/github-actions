@@ -39,7 +39,10 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
 
+  console.dir(issue)
+
   getLabelsOfBoard(apiKey, apiToken, boardId).then(function(response) {
+    console.dir(response)
     const trelloLabels = response;
     const trelloLabelIds = [];
     issueLabelNames.forEach(function(issueLabelName) {
@@ -56,6 +59,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
     }
 
     createCard(apiKey, apiToken, listId, cardParams).then(function(response) {
+      console.dir(response)
       const params = {
         owner: github.context.repo.owner,
         repo: github.context.repo.repo,
@@ -102,13 +106,13 @@ function moveCardWhenIssueClose(apiKey, apiToken) {
   const description = issue.body;
   const cardId = description.substring(description.length-27, description.length-3)
 
-  getCard(apiKey, apiToken, cardId).then(function(response) {
-    if (cardId) {
-      updateCardLocation(apiKey, apiToken, cardId, destinationListId);
-    } else {
-      core.setFailed(`Card ${cardId} not found.`);
-    }
-  })
+  if (cardId) {
+    updateCardLocation(apiKey, apiToken, cardId, destinationListId).then(function(response) {
+      console.dir(response)
+    });
+  } else {
+    core.setFailed(`Card ${cardId} not found.`);
+  }
 }
 
 async function getLabelsOfBoard(apiKey, apiToken, boardId) {
@@ -162,7 +166,7 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
 }
 
 async function patch(url, params) {
-  console.dir(`Calling PATCH for ${url} with params ${params}`);
+  console.dir(`Calling PATCH for ${url}`);
   const octokit = new Octokit()
   await octokit.request(`PATCH ${url}`, params);
 }
