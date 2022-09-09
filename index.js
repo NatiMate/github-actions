@@ -7,6 +7,7 @@ try {
   const apiKey = process.env['TRELLO_API_KEY'];
   const apiToken = process.env['TRELLO_API_TOKEN'];
   const action = core.getInput('trello-action');
+  
 
   switch (action) {
     case 'create_card_when_issue_opened':
@@ -136,17 +137,7 @@ async function createCard(apiKey, apiToken, listId, params) {
     json: true,
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards?
-    idList=${listId}
-    &key=${apiKey}
-    &token=${apiToken}
-    &keepFromSource=all
-    &name=[#${params.number}] ${params.title}
-    &desc=params.description
-    &urlSource=${params.url}
-    &idLabels=${params.labelIds}`,
-    options
-  );
+  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&keepFromSource=all&name=[#${params.number}] ${params.title}&desc=params.description&urlSource=${params.url}&idLabels=${params.labelIds}`, options);
   return response;
 }
 
@@ -164,7 +155,7 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
 
 async function patchIssue(owner, repo, issue_number, body) {
   console.dir(`Calling PATCH for /repos/${owner}/${repo}/issues/${issue_number}`);
-  const octokit = github.getOctokit(core.getInput('repo-token'))
+  const octokit = new Octokit({auth: core.getInput('repo-token')})
   await octokit.request(`PATCH /repos/${owner}/${repo}/issues/${issue_number}`, {
     owner: owner,
     repo: repo,
