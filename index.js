@@ -117,7 +117,6 @@ async function getLabelsOfBoard(apiKey, apiToken, boardId) {
     json: true,
   }
   const response = await fetch(`https://api.trello.com/1/boards/${boardId}/labels?key=${apiKey}&token=${apiToken}`, options);
-  console.dir(await response.json());
   return await response.json();
 }
 
@@ -127,7 +126,6 @@ async function getCard(apiKey, apiToken, cardId) {
     json: true,
   }
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options);
-  console.dir(await response.json());
   return await response.json();
 }
 
@@ -148,7 +146,6 @@ async function createCard(apiKey, apiToken, listId, params) {
   }
 
   const response = await fetch('https://api.trello.com/1/cards', options)
-  console.dir(await response.json());
   return await response.json()
 }
 
@@ -161,7 +158,6 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
     json: true,
   }
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options)
-  console.dir(await response.json());
   return await response.json()
 }
 
