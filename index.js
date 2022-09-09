@@ -146,7 +146,7 @@ async function createCard(apiKey, apiToken, listId, params) {
   }
 
   const response = await fetch('https://api.trello.com/1/cards', options)
-  return await response.json()
+  return response
 }
 
 async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
