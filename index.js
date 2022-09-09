@@ -148,7 +148,7 @@ async function createCard(apiKey, apiToken, listId, params) {
     &idLabels=${params.labelIds}`,
     options
   );
-  return await response.json();
+  return response;
 }
 
 async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
