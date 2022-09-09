@@ -47,7 +47,6 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
     const trelloLabels = response;
     const trelloLabelIds = [];
     issueLabelNames.forEach(function(issueLabelName) {
-      // @ts-ignore type is unknown but its a json dict
       trelloLabels.forEach(function(trelloLabel) {
         if (trelloLabel.name == issueLabelName) {
           trelloLabelIds.push(trelloLabel.id);
@@ -61,15 +60,13 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
 
     createCard(apiKey, apiToken, listId, cardParams).then(function(response) {
       console.dir(response)
-      const params = {
-        owner: github.context.repo.owner,
-        repo: github.context.repo.repo,
-        issueNumber: issueNumber,
-        // @ts-ignore type is unknown but its a json dict
-        body: issueBody + '\r\n\r\n' + `This issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\r\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`
-      }
 
-      patch(issueUrl, params)
+      patchIssue(
+        github.context.repo.owner,
+        github.context.repo.repo,
+        issueNumber,
+        issueBody + '\r\n\r\n' + `This issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\r\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+      )
     });
   });
 }
@@ -166,8 +163,13 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
   return await response.json()
 }
 
-async function patch(url, params) {
-  console.dir(`Calling PATCH for ${url}`);
+async function patchIssue(owner, repo, issue_number, body) {
+  console.dir(`Calling PATCH for /repos/${owner}/${repo}/issues/${issue_number}`);
   const octokit = new Octokit()
-  await octokit.request(`PATCH ${url}`, params);
+  await octokit.request(`PATCH /repos/${owner}/${repo}/issues/${issue_number}`, {
+    owner: owner,
+    repo: repo,
+    issue_number: issue_number,
+    body: body
+  });
 }
