@@ -134,18 +134,21 @@ async function getCard(apiKey, apiToken, cardId) {
 async function createCard(apiKey, apiToken, listId, params) {
   const options = {
     method: 'POST',
-    form: {
-      'keepFromSource': 'all',
-      'name': `[#${params.number}] ${params.title}`,
-      'desc': params.description,
-      'urlSource': params.url,
-      'idLabels': params.labelIds
-    },
     json: true,
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}`, options)
-  return response
+  const response = await fetch(`https://api.trello.com/1/cards?
+    idList=${listId}
+    &key=${apiKey}
+    &token=${apiToken}
+    &keepFromSource=all
+    &name=[#${params.number}] ${params.title}
+    &desc=params.description
+    &urlSource=${params.url}
+    &idLabels=${params.labelIds}`,
+    options
+  );
+  return await response.json();
 }
 
 async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
@@ -162,7 +165,7 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
 
 async function patchIssue(owner, repo, issue_number, body) {
   console.dir(`Calling PATCH for /repos/${owner}/${repo}/issues/${issue_number}`);
-  const octokit = new Octokit({auth: process.env['GITHUB_TOKEN']})
+  const octokit = github.getOctokit(github.token)
   await octokit.request(`PATCH /repos/${owner}/${repo}/issues/${issue_number}`, {
     owner: owner,
     repo: repo,
