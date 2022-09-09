@@ -36,7 +36,6 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const issueTitle = issue.title;
   const issueBody = issue.body;
   const issueHtmlUrl = issue.url;
-  const issueUrl = issue.url;
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
 
@@ -165,7 +164,7 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
 
 async function patchIssue(owner, repo, issue_number, body) {
   console.dir(`Calling PATCH for /repos/${owner}/${repo}/issues/${issue_number}`);
-  const octokit = github.getOctokit(github.token)
+  const octokit = github.getOctokit(core.getInput('repo-token'))
   await octokit.request(`PATCH /repos/${owner}/${repo}/issues/${issue_number}`, {
     owner: owner,
     repo: repo,
