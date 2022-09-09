@@ -1,8 +1,7 @@
-import fetch from 'node-fetch';
-
 const core = require('@actions/core');
 const github = require('@actions/github');
-const { Octokit } = require("@octokit/rest");
+const { Octokit } = require('@octokit/rest');
+const fetch = require('node-fetch');
 
 try {
   const apiKey = process.env['TRELLO_API_KEY'];
