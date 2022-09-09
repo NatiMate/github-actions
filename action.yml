@@ -1,0 +1,12 @@
+name: 'Link GitHub issues with Trello cards'
+description: 'Create a Trello cards whenever a issue is opened and move it into your done list when the issue is closed.'
+runs:
+  using: 'node12'
+  main: 'index.js'
+inputs:
+  trello-action:
+    description: 'The trello action that should be called. See README.md for more info'
+    required: true
+  repository-labels:
+    description: 'Labels that identify this repository and should be added to every trello card. Separate multiple labels with ",".'
+    required: false
