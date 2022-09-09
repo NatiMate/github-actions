@@ -5,7 +5,7 @@ runs:
   main: 'index.js'
 inputs:
   repo-token:
-    description: 'An access token for this repo. ${{ secrets.GITHUB_TOKEN }} should be sufficient'
+    description: 'An access token for this repo. secrets.GITHUB_TOKEN should be sufficient'
     required: true
   trello-action:
     description: 'The trello action that should be called. See README.md for more info'
