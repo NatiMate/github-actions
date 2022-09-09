@@ -135,10 +135,7 @@ async function createCard(apiKey, apiToken, listId, params) {
   const options = {
     method: 'POST',
     form: {
-      'idList': listId,
       'keepFromSource': 'all',
-      'key': apiKey,
-      'token': apiToken,
       'name': `[#${params.number}] ${params.title}`,
       'desc': params.description,
       'urlSource': params.url,
@@ -147,7 +144,7 @@ async function createCard(apiKey, apiToken, listId, params) {
     json: true,
   }
 
-  const response = await fetch('https://api.trello.com/1/cards', options)
+  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}`, options)
   return response
 }
 
