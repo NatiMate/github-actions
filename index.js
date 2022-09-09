@@ -35,7 +35,8 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const issueNumber = issue.number;
   const issueTitle = issue.title;
   const issueBody = issue.body;
-  const issueUrl = issue.html_url;
+  const issueHtmlUrl = issue.url;
+  const issueUrl = issue.url;
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
 
@@ -55,7 +56,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
     });
 
     const cardParams = {
-      number: issueNumber, title: issueTitle, description: issueBody, url: issueUrl, labelIds: trelloLabelIds.join()
+      number: issueNumber, title: issueTitle, description: issueBody, url: issueHtmlUrl, labelIds: trelloLabelIds.join()
     }
 
     createCard(apiKey, apiToken, listId, cardParams).then(function(response) {
