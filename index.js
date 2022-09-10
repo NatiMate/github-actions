@@ -35,7 +35,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const issueNumber = issue.number;
   const issueTitle = issue.title;
   const issueBody = issue.body;
-  const issueHtmlUrl = issue.url;
+  const issueHtmlUrl = issue.html_url;
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
 
