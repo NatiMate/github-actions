@@ -35,10 +35,8 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const issueNumber = issue.number;
   const issueTitle = issue.title;
   var issueBody = issue.body;
-  console.dir(issueBody)
   if (typeof issueBody == 'string') {
     issueBody = issueBody.replace(/\n\nThis issue was automatically linked to Trello card \[.+?\)\. Closing this issue will move the Trello card to the archive\.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY .+?-->/, '');
-    console.dir(issueBody)
   }
   const issueHtmlUrl = issue.html_url;
   const repositoryLabels = core.getInput('repository-labels').split(',');
@@ -55,7 +53,6 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
       });
     });
 
-    console.dir(`[%23${issueNumber}]+${issueTitle}`)
     const cardParams = {
       key: apiKey,
       token: apiToken,
