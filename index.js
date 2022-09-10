@@ -35,9 +35,6 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const issueNumber = issue.number;
   const issueTitle = issue.title;
   var issueBody = issue.body;
-  if (typeof issueBody == 'string') {
-    issueBody = issueBody.replace(/\n\nThis issue was automatically linked to Trello card \[.+?\)\. Closing this issue will move the Trello card to the archive\.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY .+?-->/, '');
-  }
   const issueHtmlUrl = issue.html_url;
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
@@ -69,7 +66,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
         github.context.repo.owner,
         github.context.repo.repo,
         issueNumber,
-        issueBody + '\r\n\r\n' + `This issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\r\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+        issueBody + '\n\n' + `This issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
       ).catch((error) => core.setFailed(`Created trello card but could not patch issue. ${error}`))
     }).catch((error) => core.setFailed(`Could not create trello card. ${error}`));
   }).catch((error) => core.setFailed(`Could not fetch trello board labels. ${error}`));
@@ -114,6 +111,13 @@ function moveCardWhenIssueClose(apiKey, apiToken) {
 
   updateCard(cardId, cardParams).then(function(response) {
     console.dir(`Successfully updated card ${cardId}`)
+    const newBody = description.replace(/\n\nThis issue was automatically linked to Trello card \[.+?\)\. Closing this issue will move the Trello card to the archive\.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY .+?-->/, '');
+    patchIssue(
+      github.context.repo.owner,
+      github.context.repo.repo,
+      issue.number,
+      newBody,
+    ).catch((error) => core.setFailed(`Moved trello card but could not patch issue. ${error}`))
   }).catch((error) => core.setFailed(`Could not update trello card. ${error}`));
 }
 
