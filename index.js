@@ -34,7 +34,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
 
   const issueNumber = issue.number;
   const issueTitle = issue.title;
-  const issueBody = issue.body;
+  const issueBody = issue.body?.replace(/\n\nThis issue was automatically linked to Trello card \[.+?\)\. Closing this issue will move the Trello card to the archive\.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY .+?-->/, '');
   const issueHtmlUrl = issue.html_url;
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
@@ -51,10 +51,16 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
     });
 
     const cardParams = {
-      number: issueNumber, title: issueTitle, description: issueBody, url: issueHtmlUrl, labelIds: trelloLabelIds.join()
+      key: apiKey,
+      token: apiToken,
+      idList: listId,
+      desc: issueBody,
+      urlSource: issueHtmlUrl,
+      idLabels: trelloLabelIds.join(),
+      name: `[%23${issueNumber}]+${issueTitle}`
     }
 
-    createCard(apiKey, apiToken, listId, cardParams).then(function(response) {
+    createCard(cardParams).then(function(response) {
       console.dir(`Successfully created trello card.`);
       patchIssue(
         github.context.repo.owner,
@@ -84,7 +90,6 @@ function moveCardWhenPullRequestOpen(apiKey, apiToken) {
 }
 
 function moveCardWhenIssueClose(apiKey, apiToken) {
-  const destinationListId = process.env['TRELLO_DONE_LIST_ID'];
   const issue = github.context.payload.issue
   if (typeof issue == 'undefined') {
     core.setFailed('Action move_card_when_issue_closed may only be called on issues.');
@@ -98,8 +103,13 @@ function moveCardWhenIssueClose(apiKey, apiToken) {
   
   const description = issue.body;
   const cardId = description.substring(description.length-27, description.length-3)
+  const cardParams = {
+    key: apiKey,
+    token: apiToken,
+    idList: process.env['TRELLO_DONE_LIST_ID'],
+  }
 
-  updateCardLocation(apiKey, apiToken, cardId, destinationListId).then(function(response) {
+  updateCard(cardId, cardParams).then(function(response) {
     console.dir(`Successfully updated card ${cardId}`)
   }).catch((error) => core.setFailed(`Could not update trello card. ${error}`));
 }
@@ -112,8 +122,7 @@ async function getLabelsOfBoard(apiKey, apiToken, boardId) {
     },
   }
   const response = await fetch(`https://api.trello.com/1/boards/${boardId}/labels?key=${apiKey}&token=${apiToken}`, options);
-  const json = await response.json();
-  return json;
+  return await response.json();
 }
 
 async function getCard(apiKey, apiToken, cardId) {
@@ -124,11 +133,10 @@ async function getCard(apiKey, apiToken, cardId) {
     },
   }
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options);
-  const json = await response.json();
-  return json;
+  return await response.json();
 }
 
-async function createCard(apiKey, apiToken, listId, params) {
+async function createCard(params) {
   const options = {
     method: 'POST',
     headers: {
@@ -136,21 +144,36 @@ async function createCard(apiKey, apiToken, listId, params) {
     },
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&desc=${params.description}&urlSource=${params.url}&idLabels=${params.labelIds}&name=[%23${params.number}]+${params.title}`, options);
-  const json = await response.json();
-  return json;
+  var queryParameters = ""
+  for (const [key, value] of Object.entries(params)) {
+      if (queryParameters !== "") {
+          queryParameters += '&'
+      }
+      queryParameters += `${key}=${value}`
+  }
+
+  const response = await fetch(`https://api.trello.com/1/cards?${queryParameters}`, options);
+  return await response.json();
 }
 
-async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
+async function updateCard(cardId, params) {
   const options = {
     method: 'PUT',
     headers: {
       "Content-Type": "application/json"
     },
   }
-  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}&idList=${newListId}`, options)
-  const json = await response.json();
-  return json;
+
+  var queryParameters = ""
+  for (const [key, value] of Object.entries(params)) {
+      if (queryParameters !== "") {
+          queryParameters += '&'
+      }
+      queryParameters += `${key}=${value}`
+  }
+
+  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?${queryParameters}`, options)
+  return await response.json();
 }
 
 async function patchIssue(owner, repo, issue_number, body) {
