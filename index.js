@@ -99,7 +99,12 @@ function moveCardWhenPullRequestOpen(apiKey, apiToken) {
       repo: repo,
       issue_number: issue_number
     }).then(issue => {
-      const body = issue['body'];
+      const body = issue.data.body;
+      if (typeof body !== 'string') {
+        core.warning('Linked an issue which does not have a body and trello card. Skipping')
+        return;
+      }
+        
       const cardId = body.substring(body.length-27, body.length-3);
       const cardParams = {
         key: apiKey,
@@ -110,7 +115,7 @@ function moveCardWhenPullRequestOpen(apiKey, apiToken) {
 
       updateCard(cardId, cardParams).then(function(response) {
         console.dir(`Successfully updated card ${cardId}`)
-      }).catch((error) => core.setFailed(`Could not update trello card. ${error}`));
+      }).catch((error) => core.warning(`Could not update trello card. ${error}`));
     }).catch(error => core.setFailed(`Could not get issue ${owner}/${repo}#${issue_number}. ${error}`));
   })
 }
