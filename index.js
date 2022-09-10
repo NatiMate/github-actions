@@ -134,7 +134,7 @@ async function createCard(apiKey, apiToken, listId, params) {
     },
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&desc=params.description&urlSource=${params.url}&idLabels=${params.labelIds}&name=[$23${params.number}]+${params.title}`, options);
+  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&desc=params.description&urlSource=${params.url}&idLabels=${params.labelIds}&name="[%23${params.number}]+${params.title}"`, options);
   return await response.json();
 }
 
