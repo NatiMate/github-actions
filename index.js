@@ -112,7 +112,8 @@ async function getLabelsOfBoard(apiKey, apiToken, boardId) {
     },
   }
   const response = await fetch(`https://api.trello.com/1/boards/${boardId}/labels?key=${apiKey}&token=${apiToken}`, options);
-  return await response.json();
+  const json = await response.json();
+  return json;
 }
 
 async function getCard(apiKey, apiToken, cardId) {
@@ -123,7 +124,8 @@ async function getCard(apiKey, apiToken, cardId) {
     },
   }
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options);
-  return await response.json();
+  const json = await response.json();
+  return json;
 }
 
 async function createCard(apiKey, apiToken, listId, params) {
@@ -134,8 +136,9 @@ async function createCard(apiKey, apiToken, listId, params) {
     },
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&desc=params.description&urlSource=${params.url}&idLabels=${params.labelIds}&name="[%23${params.number}]+${params.title}"`, options);
-  return await response.json();
+  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&desc=${params.description}&urlSource=${params.url}&idLabels=${params.labelIds}&name=[%23${params.number}]+${params.title}`, options);
+  const json = await response.json();
+  return json;
 }
 
 async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
@@ -146,7 +149,8 @@ async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
     },
   }
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}&idList=${newListId}`, options)
-  return await response.json()
+  const json = await response.json();
+  return json;
 }
 
 async function patchIssue(owner, repo, issue_number, body) {
