@@ -7,7 +7,6 @@ try {
   const apiKey = process.env['TRELLO_API_KEY'];
   const apiToken = process.env['TRELLO_API_TOKEN'];
   const action = core.getInput('trello-action');
-  
 
   switch (action) {
     case 'create_card_when_issue_opened':
@@ -40,10 +39,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
 
-  console.dir(issue)
-
   getLabelsOfBoard(apiKey, apiToken, boardId).then(function(response) {
-    console.dir(response)
     const trelloLabels = response;
     const trelloLabelIds = [];
     issueLabelNames.forEach(function(issueLabelName) {
@@ -59,8 +55,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
     }
 
     createCard(apiKey, apiToken, listId, cardParams).then(function(response) {
-      console.dir(response)
-
+      console.dir(`Successfully created trello card.`);
       patchIssue(
         github.context.repo.owner,
         github.context.repo.repo,
@@ -104,53 +99,68 @@ function moveCardWhenIssueClose(apiKey, apiToken) {
   const description = issue.body;
   const cardId = description.substring(description.length-27, description.length-3)
 
-  if (cardId) {
-    updateCardLocation(apiKey, apiToken, cardId, destinationListId).then(function(response) {
-      console.dir(response)
-    });
-  } else {
-    core.setFailed(`Card ${cardId} not found.`);
-  }
+  updateCardLocation(apiKey, apiToken, cardId, destinationListId).then(function(response) {
+    console.dir(`Successfully updated card ${cardId}`)
+  });
 }
 
 async function getLabelsOfBoard(apiKey, apiToken, boardId) {
-  const options = {
-    method: 'GET',
-    json: true,
+  try {
+    const options = {
+      method: 'GET',
+      headers: {
+        "Content-Type": "application/json"
+      },
+    }
+    const response = await fetch(`https://api.trello.com/1/boards/${boardId}/labels?key=${apiKey}&token=${apiToken}`, options);
+    return await response.json();
+  } catch (error) {
+    core.setFailed(`Could not fetch trello board labels. ${error}`);
   }
-  const response = await fetch(`https://api.trello.com/1/boards/${boardId}/labels?key=${apiKey}&token=${apiToken}`, options);
-  return await response.json();
 }
 
 async function getCard(apiKey, apiToken, cardId) {
   const options = {
     method: 'GET',
-    json: true,
+    headers: {
+      "Content-Type": "application/json"
+    },
   }
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options);
   return await response.json();
 }
 
 async function createCard(apiKey, apiToken, listId, params) {
-  const options = {
-    method: 'POST',
-    json: true,
+  try {
+    const options = {
+      method: 'POST',
+      headers: {
+        "Content-Type": "application/json"
+      },
+    }
+  
+    const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&name=[#${params.number}]%20${params.title}&desc=params.description&urlSource=${params.url}&idLabels=${params.labelIds}`, options);
+    const responseText = response.text()
+    console.dir(responseText)
+    return JSON.parse(responseText);
+  } catch (error) {
+    core.setFailed(`Could not create trello card. ${error}`);
   }
-
-  const response = await fetch(`https://api.trello.com/1/cards?idList=${listId}&key=${apiKey}&token=${apiToken}&keepFromSource=all&name=[#${params.number}] ${params.title}&desc=params.description&urlSource=${params.url}&idLabels=${params.labelIds}`, options);
-  return response;
 }
 
 async function updateCardLocation(apiKey, apiToken, cardId, newListId) {
-  const options = {
-    method: 'PUT',
-    form: {
-      'idList': newListId,
-    },
-    json: true,
+  try {
+    const options = {
+      method: 'PUT',
+      headers: {
+        "Content-Type": "application/json"
+      },
+    }
+    const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}&idList=${newListId}`, options)
+    return await response.json()
+  } catch (error) {
+    core.setFailed(`Could not update trello card. ${error}`);
   }
-  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?key=${apiKey}&token=${apiToken}`, options)
-  return await response.json()
 }
 
 async function patchIssue(owner, repo, issue_number, body) {
