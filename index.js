@@ -34,11 +34,11 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
 
-  getLabelsOfBoard(apiKey, apiToken, boardId).then(function(response) {
+  getLabelsOfBoard(apiKey, apiToken, boardId).then(response => {
     const trelloLabels = response;
     const trelloLabelIds = [];
-    issueLabelNames.forEach(function(issueLabelName) {
-      trelloLabels.forEach(function(trelloLabel) {
+    issueLabelNames.forEach(issueLabelName => {
+      trelloLabels.forEach(trelloLabel => {
         if (trelloLabel.name == issueLabelName) {
           trelloLabelIds.push(trelloLabel.id);
         }
@@ -57,7 +57,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
       name: `[%23${issueNumber}]+${issue.title}`
     }
 
-    createCard(cardParams).then(function(response) {
+    createCard(cardParams).then(response => {
       console.dir(`Successfully created trello card.`);
       patchIssue(
         github.context.repo.owner,
@@ -110,11 +110,18 @@ function moveCardWhenPullRequestOpen(apiKey, apiToken) {
         key: apiKey,
         token: apiToken,
         idList: process.env['TRELLO_REVIEW_LIST_ID'],
-        urlSource: pullRequest.html_url,
       }
 
-      updateCard(cardId, cardParams).then(function(response) {
-        console.dir(`Successfully updated card ${cardId}`)
+      updateCard(cardId, cardParams).then(response => {
+        const cardAttachmentParams = {
+          key: apiKey,
+          token: apiToken,
+          url: pullRequest.html_url
+        }
+
+        addUrlSourceToCard(cardId, cardAttachmentParams).then(response => {
+          console.dir(`Successfully updated card ${cardId}`)
+        }).catch((error) => core.warning(`Could not attach PR to trello card. ${error}`));
       }).catch((error) => core.warning(`Could not update trello card. ${error}`));
     }).catch(error => core.setFailed(`Could not get issue ${owner}/${repo}#${issue_number}. ${error}`));
   })
@@ -140,7 +147,7 @@ function moveCardWhenIssueClose(apiKey, apiToken) {
     idList: process.env['TRELLO_DONE_LIST_ID'],
   }
 
-  updateCard(cardId, cardParams).then(function(response) {
+  updateCard(cardId, cardParams).then(response => {
     console.dir(`Successfully updated card ${cardId}`)
     const newBody = description.replace(/\n\nThis issue was automatically linked to Trello card \[.+?\)\. Closing this issue will move the Trello card to the archive\.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY .+?-->/, '');
     patchIssue(
@@ -212,6 +219,26 @@ async function updateCard(cardId, params) {
 
   const response = await fetch(`https://api.trello.com/1/cards/${cardId}?${queryParameters}`, options)
   return await response.json();
+}
+
+async function addUrlSourceToCard(cardId, params) {
+  const options = {
+    method: 'POST',
+    headers: {
+      "Content-Type": "application/json"
+    },
+  }
+
+  var queryParameters = ""
+  for (const [key, value] of Object.entries(params)) {
+      if (queryParameters !== "") {
+          queryParameters += '&'
+      }
+      queryParameters += `${key}=${value}`
+  }
+
+  const response = await fetch(`https://api.trello.com/1/cards/${cardId}/attachments?${queryParameters}`, options)
+  return await response.json()
 }
 
 async function patchIssue(owner, repo, issue_number, body) {
