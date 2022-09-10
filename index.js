@@ -84,9 +84,15 @@ function moveCardWhenPullRequestOpen(apiKey, apiToken) {
   const octokit = new Octokit({auth: core.getInput('repo-token')})
 
   matches.forEach(element => {
-    const owner = element[2] ?? github.context.repo.owner;
-    const repo = element[3] ?? github.context.repo.repo;
+    var owner = element[2];
+    var repo = element[3];
     const issue_number = Number(element[4]);
+    if (typeof owner === "undefined" || owner === null) { 
+      owner = github.context.repo.owner;
+    }
+    if (typeof repo === "undefined" || repo === null) { 
+      repo = github.context.repo.repo;
+    }
 
     octokit.rest.issues.get({
       owner: owner,
@@ -101,7 +107,7 @@ function moveCardWhenPullRequestOpen(apiKey, apiToken) {
         idList: process.env['TRELLO_REVIEW_LIST_ID'],
         urlSource: pullRequest.html_url,
       }
-      
+
       updateCard(cardId, cardParams).then(function(response) {
         console.dir(`Successfully updated card ${cardId}`)
       }).catch((error) => core.setFailed(`Could not update trello card. ${error}`));
