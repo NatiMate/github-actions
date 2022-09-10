@@ -24,18 +24,13 @@ try {
 }
 
 function createCardWhenIssueOpen(apiKey, apiToken) {
-  const boardId = process.env['TRELLO_BOARD_ID'];
-  const listId = process.env['TRELLO_TO_DO_LIST_ID'];
   const issue = github.context.payload.issue
   if (typeof issue == 'undefined') {
     core.setFailed('Action create_card_when_issue_opened may only be called on issues.');
     return;
   }
 
-  const issueNumber = issue.number;
-  const issueTitle = issue.title;
-  var issueBody = issue.body;
-  const issueHtmlUrl = issue.html_url;
+  const boardId = process.env['TRELLO_BOARD_ID'];
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
 
@@ -50,14 +45,16 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
       });
     });
 
+    var issueBody = issue.body;
+    const issueNumber = issue.number;
     const cardParams = {
       key: apiKey,
       token: apiToken,
-      idList: listId,
+      idList: process.env['TRELLO_TO_DO_LIST_ID'],
       desc: issueBody,
-      urlSource: issueHtmlUrl,
+      urlSource: issue.html_url,
       idLabels: trelloLabelIds.join(),
-      name: `[%23${issueNumber}]+${issueTitle}`
+      name: `[%23${issueNumber}]+${issue.title}`
     }
 
     createCard(cardParams).then(function(response) {
@@ -66,27 +63,50 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
         github.context.repo.owner,
         github.context.repo.repo,
         issueNumber,
-        issueBody + '\n\n' + `This issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+        issueBody + `\n\nThis issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
       ).catch((error) => core.setFailed(`Created trello card but could not patch issue. ${error}`))
     }).catch((error) => core.setFailed(`Could not create trello card. ${error}`));
   }).catch((error) => core.setFailed(`Could not fetch trello board labels. ${error}`));
 }
 
 function moveCardWhenPullRequestOpen(apiKey, apiToken) {
-  const destinationListId = process.env['TRELLO_REVIEW_LIST_ID'];
   const pullRequest = github.context.payload.pull_request
   if (typeof pullRequest == 'undefined') {
     core.setFailed('Action move_card_when_pull_request_opened may only be called on pull requests.');
     return;
   }
   if (typeof pullRequest.body !== 'string') {
-    core.setFailed('Action move_card_when_pull_request_opened may only be called on pull requests.');
     return;
   }
 
-  console.dir(pullRequest);
-  core.setFailed('Not yet implemented');
-  return;
+  const keywordRegex = new RegExp(/(?:close|closes|closed|fix|fixes|fixed|resolve|resolves|resolved) ((?<owner>[^ ]+?)\/(?<repo>[^ ]+?))?#(?<issueNumber>[0-9]+)/, "i")
+  const matches = [...pullRequest.body.matchAll(keywordRegex)]
+  const octokit = new Octokit({auth: core.getInput('repo-token')})
+
+  matches.forEach(element => {
+    const owner = element[2] ?? github.context.repo.owner;
+    const repo = element[3] ?? github.context.repo.repo;
+    const issue_number = Number(element[4]);
+
+    octokit.rest.issues.get({
+      owner: owner,
+      repo: repo,
+      issue_number: issue_number
+    }).then(issue => {
+      const body = issue['body'];
+      const cardId = body.substring(body.length-27, body.length-3);
+      const cardParams = {
+        key: apiKey,
+        token: apiToken,
+        idList: process.env['TRELLO_REVIEW_LIST_ID'],
+        urlSource: pullRequest.html_url,
+      }
+      
+      updateCard(cardId, cardParams).then(function(response) {
+        console.dir(`Successfully updated card ${cardId}`)
+      }).catch((error) => core.setFailed(`Could not update trello card. ${error}`));
+    }).catch(error => core.setFailed(`Could not get issue ${owner}/${repo}#${issue_number}. ${error}`));
+  })
 }
 
 function moveCardWhenIssueClose(apiKey, apiToken) {
