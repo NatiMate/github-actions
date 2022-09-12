@@ -194,10 +194,10 @@ async function createCard(params) {
       if (queryParameters !== "") {
           queryParameters += '&'
       }
-      queryParameters += `${key}=${value}`
+      queryParameters += `${key}=${encodeURIComponent(value)}`
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards?${encodeURIComponent(queryParameters)}`, options);
+  const response = await fetch(`https://api.trello.com/1/cards?${queryParameters}`, options);
   return await response.json();
 }
 
@@ -214,10 +214,10 @@ async function updateCard(cardId, params) {
       if (queryParameters !== "") {
           queryParameters += '&'
       }
-      queryParameters += `${key}=${value}`
+      queryParameters += `${key}=${encodeURIComponent(value)}`
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?${encodeURIComponent(queryParameters)}`, options)
+  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?${queryParameters}`, options)
   return await response.json();
 }
 
