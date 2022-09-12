@@ -46,8 +46,6 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
     });
 
     var cardBody = issue.body;
-    if (typeof cardBody !== 'undefined')
-      cardBody = cardBody.replace('\n', '%0D');
     const issueNumber = issue.number;
     const cardParams = {
       key: apiKey,
@@ -199,7 +197,7 @@ async function createCard(params) {
       queryParameters += `${key}=${value}`
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards?${queryParameters}`, options);
+  const response = await fetch(`https://api.trello.com/1/cards?${encodeURIComponent(queryParameters)}`, options);
   return await response.json();
 }
 
@@ -219,7 +217,7 @@ async function updateCard(cardId, params) {
       queryParameters += `${key}=${value}`
   }
 
-  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?${queryParameters}`, options)
+  const response = await fetch(`https://api.trello.com/1/cards/${cardId}?${encodeURIComponent(queryParameters)}`, options)
   return await response.json();
 }
 
