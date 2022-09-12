@@ -54,7 +54,7 @@ function createCardWhenIssueOpen(apiKey, apiToken) {
       desc: cardBody,
       urlSource: issue.html_url,
       idLabels: trelloLabelIds.join(),
-      name: `[%23${issueNumber}]+${issue.title}`
+      name: `[#${issueNumber}] ${issue.title}`
     }
 
     createCard(cardParams).then(response => {
