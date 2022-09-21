@@ -39,11 +39,15 @@ function handleIssueOpened(apiKey, apiToken) {
 }
 
 function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
-  console.dir(issue) // DEBUG PRINT
-
   getCard(apiKey, apiToken, cardId).then(response => {
+    const trelloLabels = []
+    response['labels'].forEach(trelloLabel => {
+      trelloLabels.push(trelloLabel.name)
+    });
+
     const patchData = {
       title: response['name'],
+      labels: trelloLabels,
       body: response['desc'] + `\n\nThis issue was automatically linked to Trello card [[#${issue.number}] ${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
     }
 
@@ -57,7 +61,7 @@ function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
       const cardParams = {
         key: apiKey,
         token: apiToken,
-        urlSource: issue.html_url,
+        url: issue.html_url,
         name: `[#${issue.number}] ${response['name']}`
       }
 
