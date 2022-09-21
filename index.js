@@ -40,16 +40,12 @@ function handleIssueOpened(apiKey, apiToken) {
 
 function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
   getCard(apiKey, apiToken, cardId).then(trelloCard => {
-    const trelloLabels = []
     const octokit = new Octokit({auth: core.getInput('repo-token')})
-
     octokit.issues.listLabelsForRepo({
       owner: github.context.repo.owner,
       repo: github.context.repo.repo
     }).then(response => {
-      console.dir(response)
-      console.dir("--------------------------")
-      console.dir(trelloCard['labels'])
+      const trelloLabels = []
       response.data.forEach(repositoryLabel => {
         trelloCard['labels'].forEach(trelloLabel => {
           if (trelloLabel.name == repositoryLabel.name) {
@@ -57,34 +53,34 @@ function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
           }
         });
       });
-    });
 
-    const patchData = {
-      title: trelloCard['name'],
-      labels: trelloLabels,
-      body: trelloCard['desc'] + `\n\nThis issue was automatically linked to Trello card [[#${issue.number}] ${trelloCard['name']}](${trelloCard['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${trelloCard['id']}-->`,
-    };
-
-    patchIssue(
-      github.context.repo.owner,
-      github.context.repo.repo,
-      issue.number,
-      patchData
-    ).then(_ => {
-      console.dir(`Successfully updated issue ${issue.number} from trello card ${cardId}`);
-      const cardParams = {
-        key: apiKey,
-        token: apiToken,
-        url: issue.html_url,
-        name: `[#${issue.number}] ${trelloCard['name']}`
+      const patchData = {
+        title: trelloCard['name'],
+        labels: trelloLabels,
+        body: trelloCard['desc'] + `\n\nThis issue was automatically linked to Trello card [[#${issue.number}] ${trelloCard['name']}](${trelloCard['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${trelloCard['id']}-->`,
       };
 
-      updateCard(cardId, cardParams).then(_ => {
-        addUrlSourceToCard(cardId, cardParams).then(_ => {
-          console.dir(`Successfully updated card ${cardId}`);
-        }).catch((error) => core.warning(`Could not attach issue to trello card ${cardId}. ${error}`));
-      }).catch((error) => core.warning(`Could not update name of trello card ${cardId}. ${error}`));
-    }).catch((error) => core.setFailed(`Could not patch issue from card ${cardId}. ${error}`));
+      patchIssue(
+        github.context.repo.owner,
+        github.context.repo.repo,
+        issue.number,
+        patchData
+      ).then(_ => {
+        console.dir(`Successfully updated issue ${issue.number} from trello card ${cardId}`);
+        const cardParams = {
+          key: apiKey,
+          token: apiToken,
+          url: issue.html_url,
+          name: `[#${issue.number}] ${trelloCard['name']}`
+        };
+
+        updateCard(cardId, cardParams).then(_ => {
+          addUrlSourceToCard(cardId, cardParams).then(_ => {
+            console.dir(`Successfully updated card ${cardId}`);
+          }).catch((error) => core.warning(`Could not attach issue to trello card ${cardId}. ${error}`));
+        }).catch((error) => core.warning(`Could not update name of trello card ${cardId}. ${error}`));
+      }).catch((error) => core.setFailed(`Could not patch issue from card ${cardId}. ${error}`));
+    }).catch((error) => core.setFailed(`Could not fetch labels of repo ${github.context.repo.repo}. ${error}`));
   }).catch((error) => core.setFailed(`Could not fetch trello card ${cardId}. ${error}`));
 }
 
