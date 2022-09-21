@@ -47,6 +47,9 @@ function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
       owner: github.context.repo.owner,
       repo: github.context.repo.repo
     }).then(response => {
+      console.dir(response)
+      console.dir("--------------------------")
+      console.dir(trelloCard['labels'])
       response.data.forEach(repositoryLabel => {
         trelloCard['labels'].forEach(trelloLabel => {
           if (trelloLabel.name == repositoryLabel.name) {
