@@ -39,16 +39,27 @@ function handleIssueOpened(apiKey, apiToken) {
 }
 
 function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
-  getCard(apiKey, apiToken, cardId).then(response => {
+  getCard(apiKey, apiToken, cardId).then(trelloCard => {
     const trelloLabels = []
-    response['labels'].forEach(trelloLabel => {
-      trelloLabels.push(trelloLabel.name)
-    });
+    const octokit = new Octokit({auth: core.getInput('repo-token')})
+
+    octokit.request(`GET /repos/${github.context.repo.owner}/${github.context.repo.repo}/labels`, {
+      owner: github.context.repo.owner,
+      repo: github.context.repo.repo
+    }).then(response => {
+      response.data.forEach(repositoryLabels => {
+        trelloCard['labels'].forEach(trelloLabel => {
+          if (trelloLabel.name == repositoryLabels.name) {
+            trelloLabels.push(trelloLabel.id);
+          }
+        });
+      });
+    })
 
     const patchData = {
-      title: response['name'],
+      title: trelloCard['name'],
       labels: trelloLabels,
-      body: response['desc'] + `\n\nThis issue was automatically linked to Trello card [[#${issue.number}] ${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+      body: trelloCard['desc'] + `\n\nThis issue was automatically linked to Trello card [[#${issue.number}] ${trelloCard['name']}](${trelloCard['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${trelloCard['id']}-->`,
     }
 
     patchIssue(
@@ -62,7 +73,7 @@ function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
         key: apiKey,
         token: apiToken,
         url: issue.html_url,
-        name: `[#${issue.number}] ${response['name']}`
+        name: `[#${issue.number}] ${trelloCard['name']}`
       }
 
       updateCard(cardId, cardParams).then(_ => {
