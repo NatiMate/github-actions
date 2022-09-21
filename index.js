@@ -39,12 +39,19 @@ function handleIssueOpened(apiKey, apiToken) {
 }
 
 function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
+  console.dir(issue) // DEBUG PRINT
+
   getCard(apiKey, apiToken, cardId).then(response => {
+    const patchData = {
+      title: response['name'],
+      body: response['desc'] + `\n\nThis issue was automatically linked to Trello card [[#${issue.number}] ${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+    }
+
     patchIssue(
       github.context.repo.owner,
       github.context.repo.repo,
       issue.number,
-      response['desc'] + `\n\nThis issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+      patchData
     ).then(_ => {
       console.dir(`Successfully updated issue ${issue.number} from trello card ${cardId}`)
       const cardParams = {
@@ -91,11 +98,15 @@ function createCardWhenIssueOpen(apiKey, apiToken, issue) {
 
     createCard(cardParams).then(response => {
       console.dir(`Successfully created trello card.`);
+      const patchData = {
+        body: issue.body + `\n\nThis issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+      }
+
       patchIssue(
         github.context.repo.owner,
         github.context.repo.repo,
         issueNumber,
-        issue.body + `\n\nThis issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+        patchData
       ).catch((error) => core.setFailed(`Created trello card but could not patch issue. ${error}`))
     }).catch((error) => core.setFailed(`Could not create trello card. ${error}`));
   }).catch((error) => core.setFailed(`Could not fetch trello board labels. ${error}`));
@@ -181,12 +192,15 @@ function moveCardWhenIssueClose(apiKey, apiToken) {
 
   updateCard(cardId, cardParams).then(response => {
     console.dir(`Successfully updated card ${cardId}`)
-    const newBody = description.replace(/\n\nThis issue was automatically linked to Trello card \[.+?\)\. Closing this issue will move the Trello card to the archive\.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY .+?-->/, '');
+    const patchData = {
+      body: description.replace(/\n\nThis issue was automatically linked to Trello card \[.+?\)\. Closing this issue will move the Trello card to the archive\.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY .+?-->/, ''),
+    }
+    
     patchIssue(
       github.context.repo.owner,
       github.context.repo.repo,
       issue.number,
-      newBody,
+      patchData
     ).catch((error) => core.setFailed(`Moved trello card but could not patch issue. ${error}`))
   }).catch((error) => core.setFailed(`Could not update trello card. ${error}`));
 }
@@ -273,13 +287,12 @@ async function addUrlSourceToCard(cardId, params) {
   return await response.json()
 }
 
-async function patchIssue(owner, repo, issue_number, body) {
+async function patchIssue(owner, repo, issue_number, params) {
   console.dir(`Calling PATCH for /repos/${owner}/${repo}/issues/${issue_number}`);
   const octokit = new Octokit({auth: core.getInput('repo-token')})
-  await octokit.request(`PATCH /repos/${owner}/${repo}/issues/${issue_number}`, {
+  await octokit.request(`PATCH /repos/${owner}/${repo}/issues/${issue_number}`, Object.assign({}, {
     owner: owner,
     repo: repo,
     issue_number: issue_number,
-    body: body
-  });
+  }, params));
 }
