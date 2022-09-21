@@ -66,8 +66,10 @@ function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
       }
 
       updateCard(cardId, cardParams).then(_ => {
-        console.dir(`Successfully updated card ${cardId}`)
-      }).catch((error) => core.warning(`Could not attach issue to trello card ${cardId}. ${error}`));
+        addUrlSourceToCard(cardId, cardParams).then(_ => {
+          console.dir(`Successfully updated card ${cardId}`)
+        }).catch((error) => core.warning(`Could not attach issue to trello card ${cardId}. ${error}`));
+      }).catch((error) => core.warning(`Could not update name of trello card ${cardId}. ${error}`));
     }).catch((error) => core.setFailed(`Could not patch issue from card ${cardId}. ${error}`))
   }).catch((error) => core.setFailed(`Could not fetch trello card ${cardId}. ${error}`));
 }
