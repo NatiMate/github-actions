@@ -10,7 +10,7 @@ try {
 
   switch (action) {
     case 'create_card_when_issue_opened':
-      createCardWhenIssueOpen(apiKey, apiToken);
+      handleIssueOpened(apiKey, apiToken);
       break;
     case 'move_card_when_pull_request_opened':
       moveCardWhenPullRequestOpen(apiKey, apiToken);
@@ -23,13 +23,45 @@ try {
   core.setFailed(error.message);
 }
 
-function createCardWhenIssueOpen(apiKey, apiToken) {
+function handleIssueOpened(apiKey, apiToken) {
   const issue = github.context.payload.issue
   if (typeof issue == 'undefined') {
     core.setFailed('Action create_card_when_issue_opened may only be called on issues.');
     return;
   }
 
+  const match = issue.title.match(new RegExp(/fetch (?<cardId>[a-z0-9]{24})/, "i"));
+  if (match != null) {
+    fetchCardWhenIssueOpen(apiKey, apiToken, issue, match[1])
+  } else {
+    createCardWhenIssueOpen(apiKey, apiToken, issue)
+  }
+}
+
+function fetchCardWhenIssueOpen(apiKey, apiToken, issue, cardId) {
+  getCard(apiKey, apiToken, cardId).then(response => {
+    patchIssue(
+      github.context.repo.owner,
+      github.context.repo.repo,
+      issue.number,
+      response['desc'] + `\n\nThis issue was automatically linked to Trello card [${response['name']}](${response['shortUrl']}). Closing this issue will move the Trello card to the archive.\n<!---WARNING DO NOT MOVE OR REMOVE THIS ID! IT MUST STAY AT THE END OF THE THIS BODY ${response['id']}-->`,
+    ).then(_ => {
+      console.dir(`Successfully updated issue ${issue.number} from trello card ${cardId}`)
+      const cardParams = {
+        key: apiKey,
+        token: apiToken,
+        urlSource: issue.html_url,
+        name: `[#${issue.number}] ${response['name']}`
+      }
+
+      updateCard(cardId, cardParams).then(_ => {
+        console.dir(`Successfully updated card ${cardId}`)
+      }).catch((error) => core.warning(`Could not attach issue to trello card ${cardId}. ${error}`));
+    }).catch((error) => core.setFailed(`Could not patch issue from card ${cardId}. ${error}`))
+  }).catch((error) => core.setFailed(`Could not fetch trello card ${cardId}. ${error}`));
+}
+
+function createCardWhenIssueOpen(apiKey, apiToken, issue) {
   const boardId = process.env['TRELLO_BOARD_ID'];
   const repositoryLabels = core.getInput('repository-labels').split(',');
   const issueLabelNames = issue.labels.map(label => label.name).concat(repositoryLabels);
